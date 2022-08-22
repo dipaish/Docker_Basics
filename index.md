@@ -5,6 +5,7 @@
 Docker Basics tutorials
 
 
+![Moby](assets/Moby-logo.webp "Docker")
 
 This is a composite repositorio of different docker labs
 
