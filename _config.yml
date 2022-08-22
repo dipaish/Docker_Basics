@@ -1,1 +1,6 @@
-theme: jekyll-theme-merlot
+title: HAMK Docker Basics
+description: Here is basics of Docker
+show_downloads: false
+theme: jekyll-theme-dinky
+github:
+  is_project_page: false
