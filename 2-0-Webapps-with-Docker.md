@@ -3,20 +3,17 @@
 ## 2.0 Webapps with Docker
 Great! So you have now looked at `docker run`, played with a Docker container and also got the hang of some terminology. Armed with all this knowledge, you are now ready to get to the real stuff &#8212; deploying web applications with Docker.
 
-### 2.1 Run a static website in a container
->**Note:** Code for this section is in this repo in the [static-site directory](https://github.com/docker/labs/tree/master/beginner/static-site).
+### 2.1 Run a website in a container
 
-Let's start by taking baby-steps. First, we'll use Docker to run a static website in a container. The website is based on an existing image. We'll pull a Docker image from Docker Store, run the container, and see how easy it is to set up a web server.
+Let's start by taking baby-steps. First, we'll use Docker to run a static website in a container. The website is based on an existing image. We'll pull a Docker image from Docker Hub, run the container, and see how easy it is to set up a web server.
 
-The image that you are going to use is a single-page website that was already created for this demo and is available on the Docker Store as [`dockersamples/static-site`](https://store.docker.com/community/images/dockersamples/static-site). You can download and run the image directly in one go using `docker run` as follows.
-
-```bash
-$ docker run -d dockersamples/static-site
-```
-
->**Note:** The current version of this image doesn't run without the `-d` flag. The `-d` flag enables **detached mode**, which detaches the running container from the terminal/shell and returns your prompt after the container starts. We are debugging the problem with this image but for now, use `-d` even for this first example.
 
 So, what happens when you run this command?
+
+
+```bash
+$ docker run -d nginxdemos/hello
+```
 
 Since the image doesn't exist on your Docker host, the Docker daemon first fetches it from the registry and then runs it as a container.
 
@@ -48,35 +45,32 @@ $ docker rm   a7a0e504ca3e
 Now, let's launch a container in **detached** mode as shown below:
 
 ```bash
-$ docker run --name static-site -e AUTHOR="Your Name" -d -P dockersamples/static-site
-e61d12292d69556eabe2a44c16cbd54486b2527e2ce4f95438e504afb7b02810
+$ docker run --name static-site -d -P nginxdemos/hello
 ```
 
 In the above command:
 
-*  `-d` will create a container with the process detached from our terminal
+* `--name` allows you to specify a container name 
+* `-d` will create a container with the process detached from our terminal
 * `-P` will publish all the exposed container ports to random ports on the Docker host
-* `-e` is how you pass environment variables to the container
-* `--name` allows you to specify a container name
-* `AUTHOR` is the environment variable name and `Your Name` is the value that you can pass
 
-Now you can see the ports by running the `docker port` command.
+
+
+Now you can see the ports by running the `docker port` command. On your own host ports can be different so look at your own output of the command. 
 
 ```bash
 $ docker port static-site
-443/tcp -> 0.0.0.0:32772
 80/tcp -> 0.0.0.0:32773
 ```
 
-If you are running [Docker for Mac](https://docs.docker.com/docker-for-mac/), [Docker for Windows](https://docs.docker.com/docker-for-windows/), or Docker on Linux, you can open `http://localhost:[YOUR_PORT_FOR 80/tcp]`. For our example this is `http://localhost:32773`.
+You can also find port using Docker Desktop 
 
-If you are using Docker Machine on Mac or Windows, you can find the hostname on the command line using `docker-machine` as follows (assuming you are using the `default` machine).
 
-```bash
-$ docker-machine ip default
-192.168.99.100
-```
-You can now open `http://<YOUR_IPADDRESS>:[YOUR_PORT_FOR 80/tcp]` to see your site live! For our example, this is: `http://192.168.99.100:32773`.
+<img src="./assets/Comingsoon.png" title="static"> 
+
+
+You can now open browser to see your site live! For our example, this is: `http://localhost:32773`.
+
 
 You can also run a second webserver at the same time, specifying a custom host port mapping to the container's webserver.
 
@@ -84,9 +78,7 @@ You can also run a second webserver at the same time, specifying a custom host p
 $ docker run --name static-site-2 -e AUTHOR="Your Name" -d -p 8888:80 dockersamples/static-site
 ```
 
-<img src="../images/static.png" title="static">
-
-To deploy this on a real server you would just need to install Docker, and run the above `docker` command(as in this case you can see the `AUTHOR` is Docker which we passed as an environment variable).
+<img src="./assets/Comingsoon.png" title="static"> 
 
 Now that you've seen how to run a webserver inside a Docker container, how do you create your own Docker image? This is the question we'll explore in the next section.
 
@@ -96,13 +88,6 @@ But first, let's stop and remove the containers since you won't be using them an
 $ docker stop static-site
 $ docker rm static-site
 ```
-
-Let's use a shortcut to remove the second site:
-
-```bash
-$ docker rm -f static-site-2
-```
-
 Run `docker ps` to make sure the containers are gone.
 
 ```bash
@@ -119,16 +104,9 @@ Docker images are the basis of containers. In the previous example, you **pulled
 ```bash
 $ docker images
 REPOSITORY             TAG                 IMAGE ID            CREATED             SIZE
-dockersamples/static-site   latest              92a386b6e686        2 hours ago        190.5 MB
 nginx                  latest              af4b3d7d5401        3 hours ago        190.5 MB
-python                 2.7                 1c32174fd534        14 hours ago        676.8 MB
-postgres               9.4                 88d845ac7a88        14 hours ago        263.6 MB
-containous/traefik     latest              27b4e0c6b2fd        4 days ago          20.75 MB
-node                   0.10                42426a5cba5f        6 days ago          633.7 MB
-redis                  latest              4f5f397d4b7c        7 days ago          177.5 MB
-mongo                  latest              467eb21035a8        7 days ago          309.7 MB
-alpine                 3.3                 70c557e50ed6        8 days ago          4.794 MB
-java                   7                   21f6ce84e43c        8 days ago          587.7 MB
+alpine/git             latest              df6434eeda49        2 days ago         43.4MB
+
 ```
 
 Above is a list of images that I've pulled from the registry and those I've created myself (we'll shortly see how). You will have a different list of images on your machine. The `TAG` refers to a particular snapshot of the image and the `ID` is the corresponding unique identifier for that image.
@@ -138,7 +116,7 @@ For simplicity, you can think of an image akin to a git repository - images can 
 For example you could pull a specific version of `ubuntu` image as follows:
 
 ```bash
-$ docker pull ubuntu:12.04
+$ docker pull ubuntu:22.04
 ```
 
 If you do not specify the version number of the image then, as mentioned, the Docker client will default to a version named `latest`.
@@ -149,7 +127,7 @@ So for example, the `docker pull` command given below will pull an image named `
 $ docker pull ubuntu
 ```
 
-To get a new Docker image you can either get it from a registry (such as the Docker Store) or create your own. There are hundreds of thousands of images available on [Docker Store](https://store.docker.com). You can also search for images directly from the command line using `docker search`.
+To get a new Docker image you can either get it from a registry (such as the Docker Store) or create your own. There are hundreds of thousands of images available on [Docker Hub](https://hub.docker.com/). You can also search for images directly from the command line using `docker search`.
 
 An important distinction with regard to images is between _base images_ and _child images_.
 
@@ -163,8 +141,6 @@ Another key concept is the idea of _official images_ and _user images_. (Both of
 
 - **User images** are images created and shared by users like you. They build on base images and add additional functionality. Typically these are formatted as `user/image-name`. The `user` value in the image name is your Docker Store user or organization name.
 
-### 2.3 Create your first image
-
-
-Need to make new example 
-
+## Next Steps
+For the next step in the tutorial, head over to 
+[3.0 Docker shell](./3-0-Docker-Shell.md)

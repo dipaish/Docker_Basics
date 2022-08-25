@@ -1,7 +1,4 @@
 {% include topnav.html %}
-
-
-# Docker_Basics
 Docker Basics tutorials for HAMK students. This is a composite repositorio of different docker labs [https://github.com/docker/labs ](https://github.com/docker/labs) and [https://dockerlabs.collabnix.com/](https://dockerlabs.collabnix.com/)
 
 
@@ -9,13 +6,13 @@ Docker Basics tutorials for HAMK students. This is a composite repositorio of di
 
 
 
-## 1.0 Installing Docker Desktop
+## 0 Installing Docker Desktop
 
 
 
 
 
-## 2.0 Docker inside WSL2
+## Alternative way of using Docker inside WSL2
 
 
 
