@@ -17,7 +17,7 @@ Docker Basics tutorials for HAMK students. This is a composite repositorio of di
 
 
 ## Next Steps
-For the next step in the tutorial, head over to [2.0 Webapps with Docker](./webapps.md)
+For the next step in the tutorial, head over to [Running-your first container in CLI](./1-0-Docker-Desktop-and-VScode.md)
 
 
 

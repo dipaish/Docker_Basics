@@ -66,7 +66,7 @@ $ docker port static-site
 You can also find port using Docker Desktop 
 
 
-<img src="./assets/Comingsoon.png" title="static"> 
+<img src="./assets/Comingsoon.png" title="Comingsoon"> 
 
 
 You can now open browser to see your site live! For our example, this is: `http://localhost:32773`.
@@ -78,7 +78,7 @@ You can also run a second webserver at the same time, specifying a custom host p
 $ docker run --name static-site-2 -e AUTHOR="Your Name" -d -p 8888:80 dockersamples/static-site
 ```
 
-<img src="./assets/Comingsoon.png" title="static"> 
+<img src="./assets/Comingsoon.png" title="Comingsoon"> 
 
 Now that you've seen how to run a webserver inside a Docker container, how do you create your own Docker image? This is the question we'll explore in the next section.
 
