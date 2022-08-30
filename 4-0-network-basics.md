@@ -50,7 +50,11 @@ You will complete the following steps as part of this lab.
 - [Step 2 - List networks](#list_networks)
 - [Step 3 - Inspect a network](#inspect)
 - [Step 4 - List network driver plugins](#list_drivers)
-
+- [Step 5: Connect a container](#connect-container)
+- [Step 6: Test network connectivity](#ping_local)
+- [Step 7: Configure NAT for external connectivity](#nat)
+- [Step 8: Configure User user-defined bridges](#User)
+- [Step 9: Configure Host network (only on Linux machines)](#Host)
 
 # <a name="docker_network"></a>Step 1: The `docker network` command
 
@@ -428,7 +432,7 @@ $ docker network rm my-net
 ```
 
 
-# <a name="nat"></a>Step 9: Configure Host network (only on Linux machines)
+# <a name="Host"></a>Step 9: Configure Host network (only on Linux machines)
 
 Host network setting can not be run in Windows + Docker Desktop environment because Windows network stack is incompatible to Docker host settings. You can this settings with Linux host using HAMK lab environments or your own linux servers
 
@@ -459,8 +463,6 @@ To remove the container and free up port 80 we need to stop container. Container
 $ docker container stop hello_nginx
 
 ```
-
-This lab is part of [https://github.com/docker/labs ](https://github.com/docker/labs ) https://github.com/docker/labs and https://docs.docker.com/network/
 
 
 https://docs.docker.com/get-started/docker_cheatsheet.pdf
