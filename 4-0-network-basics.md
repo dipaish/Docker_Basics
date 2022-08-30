@@ -17,7 +17,7 @@ The four basic resources of virtualization are CPU, memory, storage and network 
 `User-defined bridge` networks are best when you need multiple containers to communicate on the same Docker host. Support for internal container DNS resolving
 
 
-`Host networks` are best when the network stack should not be isolated from the Docker host, but you want other aspects of the container to be isolated. Good chose for network or VPN solution. 
+`Host networks` are best when the network stack should not be isolated from the Docker host, but you want other aspects of the container to be isolated. Good chose for network or VPN solution. Unfortunately Host networks **will not** work on Windows computers. 
 
 `none` disable all networking. Usually used in conjunction with a custom network driver or container that don't need network access. 
 
@@ -337,30 +337,106 @@ If you try and curl the IP address on a different port number it will fail.
 
 
 
-# <a name="nat"></a>Step 8: Configure User defined network
+# <a name="User"></a>Step 8: Configure User user-defined bridges
+
+So far in the exercises, we have used the default network connection, which has been sufficient for the exercises. However, from the point of view of data security, it is important to isolate different containers from each other if it is not necessary for the containers to talk to each other.
+
+In addition, in user-defined networks, containers can use the names of other containers for DNS addressing, which enables working connections even if the containers' IP space changes. DNS is critical when we use several different docker containers to form a single service entity, such as a WWW server and Mysql databases
 
 
 
-
+Lets create a user-defined bridge network named 
+```
 docker network create my-nginx
+```
 
 
+Lets create and start the container. We will start it as a detached process. The -d flag means to start the container detached (in the background). The --rm option means to remove the container once it exits/stops. The -p forwards container 80 port to host 8080 port.
 
-docker create --name my-nginx --network my-net --publish 8080:80 nginx:latest
+```
+docker run --name my-nginx --network my-net -d --rm -p 8080:80 nginx:latest  
+```
 
 
+Next we will stop [Step 6](#ping_local) sleeping-ubuntu container if it still running. If you have already stopped it you can skip to docker network command.
 
 
+```
+$ docker ps
 
-# <a name="nat"></a>Step 9: Configure Host network
+CONTAINER ID    IMAGE    COMMAND             CREATED  STATUS  NAMES
+6dd93d6cdc80    ubuntu   "sleep infinity"    5 mins   Up      sleeping-ubuntu
+
+
+$ docker stop 6dd93d6cdc80
+```
+
+We will transfer `sleeping-ubuntu` container from default network to your new user define network, start it and inspect the my-net network for successful connection
+
+```
+$ docker network connect my-net sleeping-ubuntu
+$ docker start sleeping-ubuntu
+$ docker network inspect my-net
+
+<Snip>
+                "Name": "my-nginx",
+                "EndpointID": "7f69cd1f607744cb38122ad6e884e2fd5dd0d1fdb3f66e01e7c697f70020e7e2",
+                "MacAddress": "02:42:ac:13:00:02",
+                "IPv4Address": "172.19.0.2/16",
+                "IPv6Address": ""
+            },
+            "cea4adb35d4d107b531ea9add3884b2250173268afc786ee6c32683cf06eba8a": {
+                "Name": "sleeping-ubuntu",
+                "EndpointID": "da9266a37c8a5d05d2ea74b3d90826fa3ff5f80f9c80740aadbc1b2f6912bd1c",
+                "MacAddress": "02:42:ac:13:00:03",
+                "IPv4Address": "172.19.0.3/16",
+                "IPv6Address": ""
+            }
+<Snip>
+```
+
+
+Exec into the container to log in and install the `ping` program if needed.
+```
+$ docker exec -it sleeping-ubuntu /bin/bash
+```
+
+
+Lets ensure that traffic between containers and DNS names work using the ping command
+
+```
+$ root@6dd93d6cdc80:/# ping  my-nginx
+PING my-nginx (172.19.0.2) 56(84) bytes of data.
+64 bytes from my-nginx.my-net (172.19.0.2): icmp_seq=1 ttl=64 time=0.094 ms
+64 bytes from my-nginx.my-net (172.19.0.2): icmp_seq=2 ttl=64 time=0.056 ms
+64 bytes from my-nginx.my-net (172.19.0.2): icmp_seq=3 ttl=64 time=0.044 ms
+64 bytes from my-nginx.my-net (172.19.0.2): icmp_seq=4 ttl=64 time=0.064 ms
+64 bytes from my-nginx.my-net (172.19.0.2): icmp_seq=5 ttl=64 time=0.067 ms
+64 bytes from my-nginx.my-net (172.19.0.2): icmp_seq=6 ttl=64 time=0.052 ms
+```
+
+This shows that the container  can talk to each other and have a valid connect to the internet. If you want to see my-nginx webpage install curl package using `apt install curl` and `curl my-nginx `
+
+To remove user define network you have to stop containers then remove them from network. 
+
+
+```
+$ docker network disconnect my-net my-nginx 
+$ docker network disconnect my-net sleeping-ubuntu
+$ docker network rm my-net
+
+```
+
+
+# <a name="nat"></a>Step 9: Configure Host network (only on Linux machines)
 
 Host network setting can not be run in Windows + Docker Desktop environment because Windows network stack is incompatible to Docker host settings. You can this settings with Linux host using HAMK lab environments or your own linux servers
 
 
-Lets create and start the container. We will start it as a detached process. The -d flag means to start the container detached (in the background). The --rm option means to remove the container once it exits/stops. 
+Lets create and start the container. We will start it as a detached process. The -d flag means to start the container detached (in the background). 
 
 ```
-docker run --rm -d --network host --name hello_nginx nginxdemos/hello
+$ docker run -d --network host --name hello_nginx nginxdemos/hello
 ```
 
 Point your web browser to the IP and port 80 of your Docker host. The following example shows a web browser pointed to `localhost:80`. You can also open webpage using Docker Desktop. You will see a basic information of the container. 
@@ -380,7 +456,7 @@ URI:	/
 To remove the container and free up port 80 we need to stop container. Container will be removed automatically because of --rm option.
 
 ```
-docker container stop hello_nginx
+$ docker container stop hello_nginx
 
 ```
 
