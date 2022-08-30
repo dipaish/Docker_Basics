@@ -2,11 +2,45 @@
 
 # Docker Networking Basics
 
-# Lab Meta
+The four basic resources of virtualization are CPU, memory, storage and network connection. In this chapter, we go through the various network solutions that are technically available and which solutions are recomended for software developers to implement in their work environment.
 
-> **Difficulty**: Beginner
 
-> **Time**: Approximately 10 minutes
+## Types of Docker networks 
+
+
+
+### **Host contained networks**
+
+`default bridge` The default network driver that will be created when docker installs on the system. All containers get an internal IP address and these containers can access each other, using this internal IP. Default bridge will not support container DNS resolving. For that you need User-defined bridge
+
+
+`User-defined bridge` networks are best when you need multiple containers to communicate on the same Docker host. Support for internal container DNS resolving
+
+
+`Host networks` are best when the network stack should not be isolated from the Docker host, but you want other aspects of the container to be isolated. Good chose for network or VPN solution. 
+
+`none` disable all networking. Usually used in conjunction with a custom network driver or container that don't need network access. 
+
+
+### **Solutions that require network device management**
+
+
+`Overlay networks` are best when you need containers running on different Docker hosts to communicate, or when multiple applications work together using swarm services.
+
+
+
+`Macvlan networks` are best when you are migrating from a VM setup or need your containers to look like physical hosts on your network, each with a unique MAC address.
+
+
+
+
+https://medium.com/edureka/docker-networking-1a7d65e89013 && https://docs.docker.com/network/ && https://docs.docker.com/network/bridge/
+
+
+
+
+
+# Docker Networking practice 
 
 In this lab you'll look at the most basic networking components that come with a fresh installation of Docker.
 
@@ -17,11 +51,6 @@ You will complete the following steps as part of this lab.
 - [Step 3 - Inspect a network](#inspect)
 - [Step 4 - List network driver plugins](#list_drivers)
 
-# Prerequisites
-
-You will need all of the following to complete this lab:
-
-- A Linux-based Docker Host running Docker 1.12 or higher
 
 # <a name="docker_network"></a>Step 1: The `docker network` command
 
@@ -32,12 +61,10 @@ Run a simple `docker network` command from any of your lab machines.
 ```
 $ docker network
 
+
 Usage:  docker network COMMAND
 
-Manage Docker networks
-
-Options:
-      --help   Print usage
+Manage networks
 
 Commands:
   connect     Connect a container to a network
@@ -45,6 +72,7 @@ Commands:
   disconnect  Disconnect a container from a network
   inspect     Display detailed information on one or more networks
   ls          List networks
+  prune       Remove all unused networks
   rm          Remove one or more networks
 
 Run 'docker network COMMAND --help' for more information on a command.
@@ -121,23 +149,242 @@ Run a `docker info` command on any of your Docker hosts and locate the list of n
 
 ```
 $ docker info
-Containers: 0
- Running: 0
- Paused: 0
- Stopped: 0
-Images: 0
-Server Version: 1.12.3
-Storage Driver: aufs
-<Snip>
-Plugins:
- Volume: local
- Network: bridge host null overlay    <<<<<<<<
-Swarm: inactive
-Runtimes: runc
-<Snip>
+Client:
+ Context:    default
+ Debug Mode: false
+ Plugins:
+  buildx: Docker Buildx (Docker Inc., v0.8.2)
+  compose: Docker Compose (Docker Inc., v2.7.0)
+  extension: Manages Docker extensions (Docker Inc., v0.2.8)
+  sbom: View the packaged-based Software Bill Of Materials (SBOM) for an image (Anchore Inc., 0.6.0)
+  scan: Docker Scan (Docker Inc., v0.17.0)
+
+Server:
+ Containers: 1
+  Running: 0
+  Paused: 0
+  Stopped: 1
+ Images: 5
+ Server Version: 20.10.17
+ Storage Driver: overlay2
+  Backing Filesystem: extfs
+  Supports d_type: true
+  Native Overlay Diff: true
+  userxattr: false
+ Logging Driver: json-file
+ Cgroup Driver: cgroupfs
+ Cgroup Version: 1
+ Plugins:
+  Volume: local
+  Network: bridge host ipvlan macvlan null overlay
+  Log: awslogs fluentd gcplogs gelf journald json-file local logentries splunk syslog
+ Swarm: inactive
+ Runtimes: io.containerd.runtime.v1.linux runc io.containerd.runc.v2
+ Default Runtime: runc
+ Init Binary: docker-init
+ ...
 ```
 
 The output above shows the **bridge**, **host**, **null**, and **overlay** drivers.
 
 
-This lab is part of [https://github.com/docker/labs ](https://github.com/docker/labs ) https://github.com/docker/labs 
+
+# <a name="connect-container"></a>Step 5: Connect a container
+
+The **bridge** network is the default network for new containers. This means that unless you specify a different network, all new containers will be connected to the **bridge** network.
+
+Create a new container.
+
+```
+$ docker run --name sleeping-ubuntu -dt ubuntu sleep infinity     
+6dd93d6cdc806df6c7812b6202f6096e43d9a013e56e5e638ee4bfb4ae8779ce
+```
+
+This command will create a new container named `sleeping-ubuntu` based on the `ubuntu:latest` image and will run the `sleep` command to keep the container running in the background. As no network was specified on the `docker run` command, the container will be added to the **bridge** network. 
+
+
+Inspect the **bridge** network again to see the new container attached to it.
+
+```
+$ docker network inspect bridge
+<Snip>
+        },
+        "ConfigOnly": false,
+        "Containers": {
+            "d74c80f164a64e4d1d13c195ac1f4acdbe78d7aa13bb5ffde25354639cff8812": {
+                "Name": "sleeping-ubuntu",
+                "EndpointID": "29ca85f851fcad5bc308a97a82add1072119b075f42bc60156afe27207630a69",
+                "MacAddress": "02:42:ac:11:00:02",
+                "IPv4Address": "172.17.0.2/16",
+                "IPv6Address": ""
+            }
+        },
+<Snip>
+```
+
+# <a name="ping_local"></a>Step 6: Test network connectivity
+
+The output to the previous `docker network inspect` command shows the IP address of the new container. In the previous example it is "172.17.0.2" but yours might be different.
+
+Ping the IP address of the container from the shell prompt of your Docker host. Remember to use the IP of the container in **your** environment.
+
+```
+$ ping 172.17.0.2
+64 bytes from 172.17.0.2: icmp_seq=1 ttl=64 time=0.069 ms
+64 bytes from 172.17.0.2: icmp_seq=2 ttl=64 time=0.052 ms
+64 bytes from 172.17.0.2: icmp_seq=3 ttl=64 time=0.050 ms
+64 bytes from 172.17.0.2: icmp_seq=4 ttl=64 time=0.049 ms
+64 bytes from 172.17.0.2: icmp_seq=5 ttl=64 time=0.049 ms
+^C
+--- 172.17.0.2 ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss, time 3999ms
+rtt min/avg/max/mdev = 0.049/0.053/0.069/0.012 ms
+```
+
+Press `Ctrl-C` to stop the ping. The replies above show that the Docker host can ping the container over the **bridge** network.
+
+Log in to the container, install the `ping`
+ program and ping `Yle.fi`.
+
+ ```
+# Get the ID of the container started in the previous step.
+$ docker ps
+
+CONTAINER ID    IMAGE    COMMAND             CREATED  STATUS  NAMES
+6dd93d6cdc80    ubuntu   "sleep infinity"    5 mins   Up      sleeping-ubuntu
+
+# Exec into the container
+$ docker exec -it 6dd93d6cdc80 /bin/bash
+
+# Update APT package lists and install the iputils-ping package
+root@6dd93d6cdc80:/# apt update
+ 
+apt install iputils-ping
+
+
+# Ping yle.fi from within the container
+root@6dd93d6cdc80:/# ping yle.fi           
+PING yle.fi (108.156.22.49) 56(84) bytes of data.
+64 bytes from 108.156.22.49 (108.156.22.49): icmp_seq=1 ttl=37 time=28.5 ms
+64 bytes from 108.156.22.49 (108.156.22.49): icmp_seq=2 ttl=37 time=32.2 ms
+64 bytes from 108.156.22.49 (108.156.22.49): icmp_seq=3 ttl=37 time=34.4 ms
+64 bytes from 108.156.22.49 (108.156.22.49): icmp_seq=4 ttl=37 time=33.1 ms
+^C
+--- yle.fi ping statistics ---
+7 packets transmitted, 7 received, 0% packet loss, time 6009ms
+rtt min/avg/max/mdev = 28.516/33.495/42.324/4.141 ms
+```
+
+This shows that the new container can ping the internet and therefore has a valid and working network configuration.
+
+
+# <a name="nat"></a>Step 7: Configure NAT for external connectivity
+
+In this step we'll start a new **NGINX** container and map port 8080 on the Docker host to port 80 inside of the container. This means that traffic that hits the Docker host on port 8080 will be passed on to port 80 inside the container.
+
+> **NOTE:** If you start a new container from the official NGINX image without specifying a command to run, the container will run a basic web server on port 80.
+
+Start a new container based off the official NGINX image.
+
+```
+$ docker run --name web1 -d -p 8080:80 nginx
+Unable to find image 'nginx:latest' locally
+latest: Pulling from library/nginx
+386a066cd84a: Pull complete
+7bdb4b002d7f: Pull complete
+49b006ddea70: Pull complete
+Digest: sha256:9038d5645fa5fcca445d12e1b8979c87f46ca42cfb17beb1e5e093785991a639
+Status: Downloaded newer image for nginx:latest
+b747d43fa277ec5da4e904b932db2a3fe4047991007c2d3649e3f0c615961038
+```
+
+Check that the container is running and view the port mapping.
+
+```
+$ docker ps
+CONTAINER ID    IMAGE               COMMAND                  CREATED             STATUS              PORTS                           NAMES
+b747d43fa277   nginx               "nginx -g 'daemon off"   3 seconds ago       Up 2 seconds        443/tcp, 0.0.0.0:8080->80/tcp   web1
+6dd93d6cdc80        ubuntu              "sleep infinity"         About an hour ago   Up About an hour                                    sleeping-ubuntu
+```
+
+There are two containers listed in the output above. The top line shows the new **web1** container running NGINX. Take note of the command the container is running as well as the port mapping - `0.0.0.0:8080->80/tcp` maps port 8080 on all host interfaces to port 80 inside the **web1** container. This port mapping is what effectively makes the containers web service accessible from external sources (via the Docker hosts IP address on port 8080).
+
+Now that the container is running and mapped to a port on a host interface you can test connectivity to the NGINX web server.
+
+Point your web browser to the IP and port 8080 of your Docker host. The following example shows a web browser pointed to `localhost:8080`. You can also open webpage using Docker Desktop. 
+
+<img src="./assets/docker-desktop-open-www.png" title="docker-desktop"> 
+
+
+
+If for some reason you cannot open a session from a web browser, you can connect from your Docker host using the `curl` command.
+
+```
+$ curl 127.0.0.1:8080
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+    <Snip>
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
+```
+
+If you try and curl the IP address on a different port number it will fail.
+
+> **NOTE:** The port mapping is actually port address translation (PAT).
+
+
+
+# <a name="nat"></a>Step 8: Configure User defined network
+
+
+
+
+docker network create my-nginx
+
+
+
+docker create --name my-nginx --network my-net --publish 8080:80 nginx:latest
+
+
+
+
+
+# <a name="nat"></a>Step 9: Configure Host network
+
+Host network setting can not be run in Windows + Docker Desktop environment because Windows network stack is incompatible to Docker host settings. You can this settings with Linux host using HAMK lab environments or your own linux servers
+
+
+Lets create and start the container. We will start it as a detached process. The -d flag means to start the container detached (in the background). The --rm option means to remove the container once it exits/stops. 
+
+```
+docker run --rm -d --network host --name hello_nginx nginxdemos/hello
+```
+
+Point your web browser to the IP and port 80 of your Docker host. The following example shows a web browser pointed to `localhost:80`. You can also open webpage using Docker Desktop. You will see a basic information of the container. 
+
+```
+Server address:	172.17.0.2:80
+
+Server name:	ac7bfe9a3569
+
+Date:	30/Aug/2022:09:53:11 +0000
+
+URI:	/
+```
+
+
+
+To remove the container and free up port 80 we need to stop container. Container will be removed automatically because of --rm option.
+
+```
+docker container stop hello_nginx
+
+```
+
+This lab is part of [https://github.com/docker/labs ](https://github.com/docker/labs ) https://github.com/docker/labs and https://docs.docker.com/network/
+
+
+https://docs.docker.com/get-started/docker_cheatsheet.pdf
