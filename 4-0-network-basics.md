@@ -345,7 +345,7 @@ If you try and curl the IP address on a different port number it will fail.
 
 So far in the exercises, we have used the default network connection, which has been sufficient for the exercises. However, from the point of view of data security, it is important to isolate different containers from each other if it is not necessary for the containers to talk to each other.
 
-In addition, in user-defined networks, containers can use the names of other containers for DNS addressing, which enables working connections even if the containers' IP space changes. DNS is critical when we use several different docker containers to form a single service entity, such as a WWW server and Mysql databases
+In addition, in user-defined networks, containers can use the names of other containers for DNS addressing, which enables working connections even if the containers' IP space changes. DNS service is critical when we use several different docker containers to form a single service entity, such as a WWW server and Mysql databases
 
 
 
